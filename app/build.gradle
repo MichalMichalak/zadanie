@@ -1,0 +1,48 @@
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.spring)
+    alias(libs.plugins.spring.boot)
+    id 'application'
+}
+
+group = 'coupons.exercise'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform(libs.spring.boot.dependencies)
+    implementation libs.spring.boot.starter.web
+    implementation libs.spring.boot.starter.jdbc
+    implementation libs.spring.boot.starter.validation
+    implementation libs.spring.boot.starter.data.redis
+    implementation libs.spring.boot.starter.restclient
+    implementation libs.spring.boot.starter.actuator
+    implementation libs.micrometer.registry.prometheus
+    runtimeOnly libs.mysql.connector.j
+    testImplementation libs.spring.boot.starter.test
+    testImplementation libs.spring.boot.starter.webmvc.test
+    testImplementation libs.spring.boot.testcontainers
+    testImplementation libs.testcontainers.mysql
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// The tests apply the same DDL as dev-env/init-db.sh, so the schema has a single source.
+tasks.named('processTestResources') {
+    from('../dev-env/schema.sql')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    mainClass = 'local.exercise.coupons.ApplicationKt'
+}

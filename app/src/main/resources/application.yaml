@@ -1,0 +1,59 @@
+server:
+  shutdown: graceful
+
+spring:
+  application:
+    name: coupon-service
+
+  # `docker stop`/SIGTERM finishes in-flight requests instead of dropping them.
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+  # MySQL. Defaults match dev-env/docker-compose.yml.
+  datasource:
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:coupons}"
+    username: ${DB_USER:coupons}
+    password: ${DB_PASSWORD:coupons}
+    hikari:
+      maximum-pool-size: 10
+
+  # Redis. Defaults match dev-env/docker-compose.yml.
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis}
+
+  # Keep calls to the external API short-lived.
+  http:
+    client:
+      connect-timeout: 2s
+      read-timeout: 5s
+
+  # The API from the README uses snake_case field names.
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+# Country lookup API (https://api.country.is/openapi.json) and its cache.
+country:
+  api:
+    base-url: https://api.country.is
+  cache:
+    ttl: 1h
+
+# Expose only the operational endpoints we actually want.
+management:
+  server:
+    # A separate connector, so the metrics and health endpoints are not reachable through whatever
+    # routes to the application port: the ingress publishes 8080 only, and an internal scraper
+    # talks to this port directly. 0 gives a random port, which is what tests use.
+    port: ${MANAGEMENT_PORT:8081}
+  endpoints:
+    web:
+      exposure:
+        # prometheus is the scrape endpoint of micrometer-registry-prometheus.
+        include: health,info,prometheus
+
+logging:
+  level:
+    local.exercise.coupons: DEBUG

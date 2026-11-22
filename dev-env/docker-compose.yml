@@ -1,0 +1,59 @@
+# Local development infrastructure for coupon-service.
+#
+# Usage (from the repository root):
+#   docker compose -f dev-env/docker-compose.yml up -d          # start MySQL + Redis
+#   docker compose -f dev-env/docker-compose.yml ps             # check health
+#   docker compose -f dev-env/docker-compose.yml logs -f mysql  # follow logs
+#   docker compose -f dev-env/docker-compose.yml down           # stop (data is kept in named volumes)
+#   docker compose -f dev-env/docker-compose.yml down -v        # stop and delete all data
+#
+# Or run the same commands from this directory without the -f flag.
+#
+# Credentials and ports are read from dev-env/.env (see .env.example), so the
+# defaults below only apply when a variable is missing from the environment.
+
+name: coupon-service
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: coupon-service-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-coupons}
+      MYSQL_USER: ${MYSQL_USER:-coupons}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-coupons}
+      TZ: UTC
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: coupon-service-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-redis}"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a '${REDIS_PASSWORD:-redis}' ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  mysql-data:
+  redis-data:
