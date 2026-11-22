@@ -651,6 +651,9 @@ Colima's socket is on the host filesystem, which the VM cannot mount.
 | `docker inspect` health `unhealthy` but API works | 8081 is not reachable inside the container, or startup exceeded the 30s start period; check `docker logs`. |
 | Port already in use | Set `SERVER_PORT` / `MANAGEMENT_PORT` (or `-p 127.0.0.1:18080:8080`). |
 | Gradle toolchain error | No JDK 21; install it or let the foojay resolver download one. |
+| `./gradlew` fails: `Unable to locate a Java Runtime` | No JDK on `PATH` and `JAVA_HOME` unset (`/usr/bin/java` on macOS is only a stub until a JDK is installed). Install Temurin 21 (`brew install --cask temurin@21`) or point `JAVA_HOME` at an existing 21 JDK, including the one Gradle provisioned under `~/.gradle/jdks/`. Fish: `set -gx JAVA_HOME /path/to/jdk`. |
+| Tests fail: `Could not find a valid Docker environment` | Testcontainers does not read `docker context`. Point it at the active socket: `export DOCKER_HOST=$(docker context inspect --format '{{.Endpoints.docker.Host}}')` (fish: `set -gx DOCKER_HOST (docker context inspect --format '{{.Endpoints.docker.Host}}')`). |
+| Tests fail: `error while creating mount source path '.../docker.sock': ... operation not supported` | Colima/remote Docker: Ryuk tries to bind-mount the host socket path, which does not exist inside the VM. Set `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`, or disable Ryuk with `TESTCONTAINERS_RYUK_DISABLED=true`. |
 | `docker build` fails: `application.jar: not found` | The Dockerfile expects a staged context; use `./docker/build-image.sh`, or stage the jar as shown above. |
 | Image runs old code after a change | Use `./docker/build-image.sh` (it rebuilds the jar by default), or rebuild the jar before `--skip-build`. |
 
