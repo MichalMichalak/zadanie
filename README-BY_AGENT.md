@@ -624,6 +624,11 @@ Shutdown: `server.shutdown: graceful` with `spring.lifecycle.timeout-per-shutdow
   all error paths and transaction rollback.
 - `CouponRedemptionConcurrencyTest` hammers redemption from many threads: quota never exceeded,
   no double redemption.
+- `CouponApiStressTest` is tagged `stress` and excluded from `:app:test`. It pushes ~100 concurrent
+  HTTP connections through the real server (Tomcat plus Hikari) and checks the same invariants, and
+  that all connections return to the pool. Run it with `./gradlew :app:stressTest`; it takes ~20s
+  once compiled. Keep it out of everyday builds, but run it nightly, before a release, or when
+  touching redemption, SQL or pool settings.
 - `CachedCountryProviderTest` / `CountryClientTest` cover cache keys, /24 normalization, IPv4
   validation and upstream failures.
 - `ApplicationTests` checks that management endpoints are on 8081 only and that Prometheus output
@@ -663,6 +668,7 @@ Useful commands:
 ./gradlew :app:bootRun                 # run locally
 ./gradlew :app:bootJar                 # build the boot jar
 ./gradlew :app:test                    # tests (Docker required)
+./gradlew :app:stressTest              # opt-in ~100-connection stress test (Docker required)
 ./gradlew :app:dependencies            # dependency report
 ./docker/build-image.sh                # build jar + image
 ./docker/build-image.sh --skip-build   # rebuild image from the existing jar

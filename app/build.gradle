@@ -29,7 +29,24 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // The stress test opens ~100 concurrent connections; it is opt-in, see stressTest below.
+        excludeTags 'stress'
+    }
+}
+
+// Opt-in: many concurrent connections through the real server, slower and noisier than the
+// default suite. Run before releases, in a nightly job, or when touching redemption/SQL/pool code.
+tasks.register('stressTest', Test) {
+    description = 'Runs the stress-tagged tests, which open many concurrent connections.'
+    group = 'verification'
+    dependsOn 'testClasses'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'stress'
+    }
+    shouldRunAfter tasks.named('test')
 }
 
 // The tests apply the same DDL as dev-env/init-db.sh, so the schema has a single source.
