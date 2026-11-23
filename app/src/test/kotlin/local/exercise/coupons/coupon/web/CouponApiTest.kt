@@ -6,6 +6,7 @@ import local.exercise.coupons.providers.CountryProvider
 import local.exercise.coupons.testing.FakeCountryConfiguration
 import local.exercise.coupons.testing.FakeCountryProvider
 import jakarta.servlet.ServletException
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -204,6 +205,24 @@ class CouponApiTest {
     @Test
     fun `rejects a non positive max usage`() {
         createCoupon(maxUsage = 0).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `rejects an unknown country code`() {
+        createCoupon(country = "zz")
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+            .andExpect(jsonPath("$.message").value(containsString("country")))
+    }
+
+    @Test
+    fun `rejects a non ISO country alias`() {
+        createCoupon(country = "uk").andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `rejects an uppercase country code`() {
+        createCoupon(country = "US").andExpect(status().isBadRequest)
     }
 
     @Test

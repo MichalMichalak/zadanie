@@ -44,7 +44,9 @@ Functional:
   API (provisioning is out of scope).
 - Coupon id: 1–16 characters of `[0-9A-Za-z_]`, chosen by the merchant, unique **per merchant**.
   Matching is case-insensitive; the stored spelling is preserved.
-- Every coupon has `max_usage` (≥ 1) and a two-letter lowercase `country`.
+- Every coupon has `max_usage` (≥ 1) and a `country`: a real ISO 3166-1 alpha-2 code in lowercase.
+  Unknown codes (`zz`) and aliases such as `uk` (the ISO code for the United Kingdom is `gb`) are
+  rejected with `400`.
 - Redemption requires the customer's country (derived from the request IP) to equal the coupon's
   country, a remaining quota, and no previous redemption of that coupon by that customer.
 - `POST /api/coupons` is idempotent per `(merchant_id, coupon_id)`: a retry answers `204` instead
@@ -453,11 +455,15 @@ actor is taken from a header.
 { "coupon_id": "Summer26", "max_usage": 2, "country": "us" }
 ```
 
+`country` must be a real ISO 3166-1 alpha-2 code in lowercase (`us`, `de`, `gb`). It is checked
+against the JDK's list of assigned codes, so unknown values such as `zz`, aliases such as `uk`, and
+uppercase input are all rejected with `400`. The code is stored lowercase.
+
 | Status | Meaning |
 | --- | --- |
 | `201 Created` | coupon inserted |
 | `204 No Content` | the same merchant already has this coupon id (idempotent retry) |
-| `400` | invalid id, `max_usage < 1`, country not two lowercase letters, missing header/body |
+| `400` | invalid id, `max_usage < 1`, country not a valid lowercase ISO 3166-1 alpha-2 code, missing header/body |
 | `404` | `MERCHANT_NOT_FOUND` |
 
 No response body on success. Coupon ids are case-insensitive: `Summer26` and `summer26` are the
